@@ -64,8 +64,8 @@ function SocketTCP:connect(host_, port_, retryConnectWhenFailure_)
 	if port_ then self._port = port_ end
 	if retryConnectWhenFailure_ ~= nil then self._isRetryConnect = retryConnectWhenFailure_ end
 
-	self.tcp = socket.tcp()
-	self.tcp:settimeout(0)
+	self._tcp = socket.tcp()
+	self._tcp:settimeout(0)
 
 	local function _checkConnect()
 		local succ = self:_connect()
@@ -79,7 +79,7 @@ function SocketTCP:connect(host_, port_, retryConnectWhenFailure_)
 		-- check whether connection is success
 		-- the connection is failure if socket isn't connected after SOCKET_CONNECT_FAIL_TIMEOUT seconds
 		local connectTimeTick = function ()
-			--print("%s.connectTimeTick", self.name)
+			--print("%s.connectTimeTick", self._name)
 			if self._isConnected then return end
 			self._waitConnect = self._waitConnect or 0
 			self._waitConnect = self._waitConnect + SOCKET_TICK_TIME
@@ -99,12 +99,12 @@ function SocketTCP:send(data_)
 		print(self._name .. " is not connected.")
 		return
 	end
-	self.tcp:send(data_)
+	self._tcp:send(data_)
 end
 
 function SocketTCP:close( ... )
-	--print("%s.close", self.name)
-	self.tcp:close();
+	--print("%s.close", self._name)
+	self._tcp:close();
 	if self._connectTimeTickScheduler then scheduler.unscheduleGlobal(self._connectTimeTickScheduler) end
 	if self._tickScheduler then scheduler.unscheduleGlobal(self._tickScheduler) end
 
@@ -141,7 +141,7 @@ function SocketTCP:_disconnect()
 end
 
 function SocketTCP:_onDisconnect()
-	--print("%s._onDisConnect", self.name);
+	--print("%s._onDisConnect", self._name);
 	self._isConnected = false
 	if self._delegate then
 		self._delegate:onEventClosed()
@@ -151,8 +151,8 @@ end
 
 -- connecte success, cancel the connection timerout timer
 function SocketTCP:_onConnected()
-	--print("%s._onConnectd", self.name)
-	self.isConnected = true
+	--print("%s._onConnectd", self._name)
+	self._isConnected = true
 	if self._delegate then
 		self._delegate:onEventConnected()
 	end
@@ -161,11 +161,11 @@ function SocketTCP:_onConnected()
 	local tick = function()
 		while true do
 			-- if use "*l" pattern, some buffer will be discarded, why?
-			local body, status, partial = self.tcp:receive("*a")	-- read the package body
+			local body, status, partial = self._tcp:receive("*a")	-- read the package body
 			--print("body:", __body, "__status:", __status, "__partial:", __partial)
     	    if status == STATUS_CLOSED or status == STATUS_NOT_CONNECTED then
 		    	self:close()
-		    	if self.isConnected then
+		    	if self._isConnected then
 		    		self:_onDisconnect()
 		    	else
 		    		self:_connectFailure()
@@ -187,7 +187,7 @@ function SocketTCP:_onConnected()
 end
 
 function SocketTCP:_connectFailure(status)
-	--print("%s._connectFailure", self.name);
+	--print("%s._connectFailure", self._name);
 	if self._delegate then
 		self._delegate:onEventConnectFailure()
 	end 
@@ -197,7 +197,7 @@ end
 -- if connection is initiative, do not reconnect
 function SocketTCP:_reconnect(immediately_)
 	if not self._isRetryConnect then return end
-	print("%s._reconnect", self.name)
+	--print("%s._reconnect", self.name)
 	if immediately_ then self:connect() return end
 	if self._reconnectScheduler then scheduler.unscheduleGlobal(self._reconnectScheduler) end
 	local doReConnect = function ()

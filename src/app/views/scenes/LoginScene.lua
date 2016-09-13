@@ -3,7 +3,7 @@ local LoginScene = class("LoginScene", function ( )
 
 function LoginScene:init()
     -- add background image
-    display.newSprite("HelloWorld.png")
+    display.newSprite("helloworld.png")
         :move(display.center)
         :addTo(self)
 
@@ -13,8 +13,8 @@ function LoginScene:init()
         :addTo(self)
 	
 	
-		
-	local __pack = string.pack("<bihP2", 0x59, 11, 1101, "", "ÖÐÎÄ")
+	--[[	
+	local __pack = string.pack("<bihP2", 0x59, 11, 1101, "", "ä½ å¥½")
 	local __ba1 = utils.bit.ByteArray.new()
 		:writeBuf(__pack)
 		:setPos(1)
@@ -27,7 +27,45 @@ function LoginScene:init()
 	print("ba1.available:", __ba1:getAvailable())
 	print("ba1.toString(16):", __ba1:toString(16))
 	print("ba1.toString(10):", __ba1:toString(10))
+	]]--
+
+	self._socket = utils.net.SocketTCP.new(self, "192.168.32.131", 20003, 3)
+	self._socket:connect()
 	
+end
+
+function LoginScene:onEventClose()
+	print("net close")
+end
+
+function LoginScene:onEventConnectFailure()
+	print("net connect failure")
+end
+
+function LoginScene:onEventConnected()
+	print("net connected")
+	local msg = string.format("9001 99999 {'account':'%s'}", "test1")
+	--local package = utils.bit.ByteArray.new():writeUShort(#msg):writeString(msg):getBytes()
+	local package = string.pack("HA", #msg, msg)
+	self._socket:send(package)
+end
+
+function LoginScene:onEventData(partial_or_body, partial, body)
+	local buf = utils.bit.ByteArray.new()
+		:writeBuf(partial)
+		:setPos(1)
+	local size = buf:getLen()
+	while (size > 2) do
+		local package_size = buf:readUShort()
+		if package_size > buf:getAvailable() then
+			break
+		end
+		local package = buf:readString(package_size)
+		print(package_size, package)
+
+		size = size - 2
+		size = size - package_size
+	end
 end
 
 return LoginScene
