@@ -162,7 +162,7 @@ function SocketTCP:_onConnected()
 		while true do
 			-- if use "*l" pattern, some buffer will be discarded, why?
 			local body, status, partial = self._tcp:receive("*a")	-- read the package body
-			--print("body:", __body, "__status:", __status, "__partial:", __partial)
+			--print("body:", body, "status:", status, "partial:", partial)
     	    if status == STATUS_CLOSED or status == STATUS_NOT_CONNECTED then
 		    	self:close()
 		    	if self._isConnected then
@@ -177,7 +177,7 @@ function SocketTCP:_onConnected()
 			then return end
 			if body and partial then body = body .. partial end
 			if self._delegate then
-				self._delegate:onEventData(partial or body, partial, body)
+				self._delegate:onEventData(body or partial)
 			end 
 		end
 	end

@@ -31,7 +31,14 @@ function LoginScene:init()
 
 	self._socket = utils.net.SocketTCP.new(self, "192.168.32.131", 20003, 3)
 	self._socket:connect()
+
+	EventCenter:register(EventDef.LOGON_RESULT, handler(self, self.handleLogonResult))
+	EventCenter:dispatch(EventDef.LOGON_RESULT, "logon success")
 	
+end
+
+function LoginScene:handleLogonResult(param)
+	print("handleLogonResult: "..param)
 end
 
 function LoginScene:onEventClose()
@@ -50,9 +57,9 @@ function LoginScene:onEventConnected()
 	self._socket:send(package)
 end
 
-function LoginScene:onEventData(partial_or_body, partial, body)
+function LoginScene:onEventData(data)
 	local buf = utils.bit.ByteArray.new()
-		:writeBuf(partial)
+		:writeBuf(data)
 		:setPos(1)
 	local size = buf:getLen()
 	while (size > 2) do

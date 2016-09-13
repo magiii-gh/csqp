@@ -7,7 +7,10 @@ require "config"
 require "socket"
 require "pack"
 require "cocos.init"
+
 cc.exports.utils = require "utils.init"
+cc.exports.EventCenter = utils.event.EventCenter
+cc.exports.EventDef = utils.event.EventDef
 
 local function main()
     require("app.QpApp"):create():run()
