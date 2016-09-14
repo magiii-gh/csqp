@@ -68,7 +68,7 @@ EventCenter.dispatch = function(self, name, ...)
             if listener.active then
                 listener.func(...)
             else
-                print("event ".. name .. " is not active")
+                --print("event ".. name .. " is not active")
             end
         end
     end

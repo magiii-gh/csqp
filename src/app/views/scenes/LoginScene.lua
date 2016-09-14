@@ -29,27 +29,40 @@ function LoginScene:init()
 	print("ba1.toString(10):", __ba1:toString(10))
 	]]--
 
+	self._netdata = utils.bit.ByteArray.new()
 	self._socket = utils.net.SocketTCP.new(self, "192.168.32.131", 20003, 3)
 	self._socket:connect()
 
-	EventCenter:register(EventDef.LOGON_RESULT, handler(self, self.handleLogonResult))
+	if self._handleLogonResult == nil then
+		self._handleLogonResult  = handler(self, self.onLogonResult)
+		EventCenter:register(EventDef.LOGON_RESULT, handler(self, self.onLogonResult))
+	end
 	EventCenter:dispatch(EventDef.LOGON_RESULT, "logon success")
+
+	self:enableNodeEvents()
 	
 end
 
-function LoginScene:handleLogonResult(param)
-	print("handleLogonResult: "..param)
+function LoginScene:onCleanup()
+	print("onExit")
+	if self._handleLogonResult ~= nil then
+		EventCenter:unregister(EventDef.LOGON_RESULT, self._handleLogonResult)
+	end
 end
 
-function LoginScene:onEventClose()
+function LoginScene:onLogonResult(param)
+	print("onLogonResult: "..param)
+end
+
+function LoginScene:onNetClose()
 	print("net close")
 end
 
-function LoginScene:onEventConnectFailure()
+function LoginScene:onNetConnectFailure()
 	print("net connect failure")
 end
 
-function LoginScene:onEventConnected()
+function LoginScene:onNetConnected()
 	print("net connected")
 	local msg = string.format("9001 99999 {'account':'%s'}", "test1")
 	--local package = utils.bit.ByteArray.new():writeUShort(#msg):writeString(msg):getBytes()
@@ -57,21 +70,28 @@ function LoginScene:onEventConnected()
 	self._socket:send(package)
 end
 
-function LoginScene:onEventData(data)
-	local buf = utils.bit.ByteArray.new()
-		:writeBuf(data)
-		:setPos(1)
-	local size = buf:getLen()
+function LoginScene:onNetData(data)
+	self._netdata:writeBuf(data):setPos(1)
+	local size = self._netdata:getAvailable()
+	print(size)
 	while (size > 2) do
-		local package_size = buf:readUShort()
-		if package_size > buf:getAvailable() then
+		local package_size = self._netdata:readUShort()
+		if self._netdata:getAvailable() < package_size then	--包不完整
+			local pos = self._netdata:getPos()
+			self._netdata:setPos(pos-2)
 			break
 		end
-		local package = buf:readString(package_size)
+		local package = self._netdata:readString(package_size)
 		print(package_size, package)
 
 		size = size - 2
 		size = size - package_size
+	end
+	--把剩余数据移至buffer头部
+	if self._netdata:getAvailable() > 0 then
+		print("roll", size)
+		local buf = self._netdata:readBuf(size)
+		self._netdata = utils.bit.ByteArray.new():writeBuf(buf)
 	end
 end
 

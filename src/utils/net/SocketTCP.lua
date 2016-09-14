@@ -109,7 +109,7 @@ function SocketTCP:close( ... )
 	if self._tickScheduler then scheduler.unscheduleGlobal(self._tickScheduler) end
 
 	if self._delegate then
-		self._delegate:onEventClose()
+		self._delegate:onNetClose()
 	end
 end
 
@@ -135,7 +135,7 @@ function SocketTCP:_disconnect()
 	self._isConnected = false
 	self._tcp:shutdown()
 	if self._delegate then
-		self._delegate:onEventClosed()
+		self._delegate:onNetClosed()
 	end
 	
 end
@@ -144,7 +144,7 @@ function SocketTCP:_onDisconnect()
 	--print("%s._onDisConnect", self._name);
 	self._isConnected = false
 	if self._delegate then
-		self._delegate:onEventClosed()
+		self._delegate:onNetClosed()
 	end
 	self:_reconnect();
 end
@@ -154,7 +154,7 @@ function SocketTCP:_onConnected()
 	--print("%s._onConnectd", self._name)
 	self._isConnected = true
 	if self._delegate then
-		self._delegate:onEventConnected()
+		self._delegate:onNetConnected()
 	end
 	if self._connectTimeTickScheduler then scheduler.unscheduleGlobal(self._connectTimeTickScheduler) end
 
@@ -177,7 +177,7 @@ function SocketTCP:_onConnected()
 			then return end
 			if body and partial then body = body .. partial end
 			if self._delegate then
-				self._delegate:onEventData(body or partial)
+				self._delegate:onNetData(body or partial)
 			end 
 		end
 	end
@@ -189,7 +189,7 @@ end
 function SocketTCP:_connectFailure(status)
 	--print("%s._connectFailure", self._name);
 	if self._delegate then
-		self._delegate:onEventConnectFailure()
+		self._delegate:onNetConnectFailure()
 	end 
 	self:_reconnect();
 end
